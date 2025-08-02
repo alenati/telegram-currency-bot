@@ -25,9 +25,6 @@ else:
         new_cells.append(cells[4][:-5]+"."+cells[4][-4:])
         new_cells.append(date)
         if cells:
-            lines.append("("+",".join(new_cells)+")")
+            lines.append(new_cells)
 
     lines = lines[1:]
-
-    output = "\n".join(lines)
-    print(output)
