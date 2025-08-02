@@ -11,8 +11,23 @@ except URLError as e:
     print(e)
 else:
     bsObj = BeautifulSoup(html.read(), 'html.parser')
-    #print(bsObj.tbody)
-    meow = bsObj.find("td",string="EUR")
-    if meow:
-        parent = meow.find_parent('tr')
-        print(parent)
+
+    date = bsObj.find("button", {"class":"datepicker-filter_button"}).get_text(strip=True)
+
+    table = bsObj.tbody
+    rows = table.find_all('tr')
+    lines = []
+    for row in rows:
+        cells = [cell.get_text(strip=True) for cell in row.find_all(['th','td'])]
+        new_cells = []
+        new_cells.append(cells[0])
+        new_cells.append(cells[2])
+        new_cells.append(cells[4][:-5]+"."+cells[4][-4:])
+        new_cells.append(date)
+        if cells:
+            lines.append("("+",".join(new_cells)+")")
+
+    lines = lines[1:]
+
+    output = "\n".join(lines)
+    print(output)
