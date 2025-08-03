@@ -1,57 +1,63 @@
+import asyncpg
 import psycopg2
+import asyncio
 from config import host, user, password, db_name
 
-def get_last_curr_info(currency_num):
+async def get_last_curr_info(currency_num):
     try:
-        connection = psycopg2.connect(
+        connection = await asyncpg.connect(
             host = host,
             user = user,
             password = password,
             database = db_name
         )
 
-        with connection.cursor() as cursor:
-            query = """
-            select date, round(rate/unit,4), currency_num from currency_cost
-            where currency_num = %s
-            order by date desc 
-            limit 1
-            """
-            cursor.execute(query,(currency_num,))
-            print(cursor.fetchall())
+        query = """
+        select date, round(rate/unit,4) as cost, currency_num from currency_cost
+        where currency_num = $1
+        order by date desc 
+        limit 1
+        """
+
+        result = await connection.fetch(query,currency_num)
+        print(result)
 
     except Exception as ex:
         print("mistake ", ex)
     finally:
         if connection:
-            connection.close()
+            await connection.close()
             print("connection closed")
 
-def get_curr_name(currency_num):
+async def get_curr_name(currency_num):
     try:
-        connection = psycopg2.connect(
+        connection = await asyncpg.connect(
             host=host,
             user=user,
             password=password,
             database=db_name
         )
 
-        with connection.cursor() as cursor:
-            query = """
-               select currency_name, currency_code from currency
-               where currency_num = %s
-               """
-            cursor.execute(query, (currency_num,))
-            print(cursor.fetchall())
+
+        query = """
+           select currency_name, currency_code from currency
+           where currency_num = $1
+           """
+        result = await connection.fetch(query,currency_num)
+        print(result)
 
     except Exception as ex:
         print("mistake ", ex)
     finally:
         if connection:
-            connection.close()
+            await connection.close()
             print("connection closed")
 
 
+async def main():
+    await get_last_curr_info('978')
+    await get_curr_name('978')
 
-get_last_curr_info('978')
-get_curr_name('978')
+
+if __name__ == '__main__':
+    asyncio.run(main())
