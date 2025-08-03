@@ -53,10 +53,34 @@ async def get_curr_name(currency_num):
             await connection.close()
             print("connection closed")
 
+async def get_num_subscribers(currency_num):
+    try:
+        connection = await asyncpg.connect(
+            host = host,
+            user = user,
+            password = password,
+            database = db_name
+        )
+        query = '''
+            select coalesce((select count(user_id) from user_choice where currency_num = $1),0)
+            as num_subscribers;
+        '''
+
+        result = await connection.fetch(query,currency_num)
+        print(result)
+
+    except Exception as ex:
+        print("mistake", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection close")
+
 
 async def main():
-    await get_last_curr_info('978')
-    await get_curr_name('978')
+    #await get_last_curr_info('978')
+    #await get_curr_name('978')
+    await get_num_subscribers('978')
 
 
 if __name__ == '__main__':
