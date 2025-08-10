@@ -37,6 +37,28 @@ async def get_last_curr_info(currency_num):
             await connection.close()
             print("connection closed")
 
+async def get_curr_num(currency_code):
+    try:
+        connection = await asyncpg.connect(
+            host = host,
+            user = user,
+            password = password,
+            database = db_name
+        )
+        query = """
+        select currency_num from currency where currency_code = $1"""
+        result = await connection.fetch(query,currency_code)
+        return result
+
+    except Exception as ex:
+        print("mistake: ", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection closed")
+
+
+
 async def get_curr_name(currency_num):
     try:
         connection = await asyncpg.connect(
@@ -177,7 +199,9 @@ async def main():
     @dp.message(F.text.regexp(r'^[^\w]*([A-Z]{3})'))
     async def handle_curr_button(message: types.Message):
         curr_code = re.search(r'[A-Z]{3}', message.text).group()
-        await message.answer(f"Ура ты выбрал валюту: {message.text}")
+        curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+
+        await message.answer(f"Информация о валюте:\n\n{message.text}\n\nЦифровой код валюты: {curr_num}\n")
 
 
 
