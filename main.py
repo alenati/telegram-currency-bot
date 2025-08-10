@@ -21,14 +21,14 @@ async def get_last_curr_info(currency_num):
         )
 
         query = """
-        select date, round(rate/unit,4) as cost, currency_num from currency_cost
+        select date, rate, unit, currency_num from currency_cost
         where currency_num = $1
         order by date desc 
         limit 1
         """
 
         result = await connection.fetch(query,currency_num)
-        print(result)
+        return result
 
     except Exception as ex:
         print("mistake ", ex)
@@ -56,8 +56,6 @@ async def get_curr_num(currency_code):
         if connection:
             await connection.close()
             print("connection closed")
-
-
 
 async def get_curr_name(currency_num):
     try:
@@ -97,7 +95,7 @@ async def get_num_subscribers(currency_num):
         '''
 
         result = await connection.fetch(query,currency_num)
-        print(result)
+        return result
 
     except Exception as ex:
         print("mistake", ex)
@@ -200,8 +198,14 @@ async def main():
     async def handle_curr_button(message: types.Message):
         curr_code = re.search(r'[A-Z]{3}', message.text).group()
         curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+        subs_num = (await  get_num_subscribers(curr_num))[0]['num_subscribers']
+        last_info = await get_last_curr_info(curr_num)
+        print(message.from_user.id)
 
-        await message.answer(f"Информация о валюте:\n\n{message.text}\n\nЦифровой код валюты: {curr_num}\n")
+        await message.answer(f"{message.text}\n\n"
+                             f"Актуальный курс ЦБ РФ:\n\n{last_info[0]['unit']} {curr_code} за {last_info[0]['rate']} RUR\n\n"
+                             f"/subscribe{curr_code} чтобы подписаться на валюту и ежедневно получать рассылку!\n\n"
+                             f"Цифровой код валюты: {curr_num}\n\nКоличество подписчиков на валюту: {subs_num}\n\n")
 
 
 
