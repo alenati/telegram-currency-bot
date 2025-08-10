@@ -5,7 +5,11 @@ from datetime import datetime, timedelta
 from aiogram import Bot,Dispatcher,types
 from aiogram.filters import Command
 from config import host, user, password, db_name, api_key
+from buttonlist import buttons
 from messages import start_m, help_m
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram import F
+import re
 
 async def get_last_curr_info(currency_num):
     try:
@@ -163,6 +167,25 @@ async def main():
             answer += f"{record['currency_name']} ({record['currency_code']}):\n{record['unit']} за {record['rate']} Российских рублей (RUR)\n\n"
 
         await message.answer(answer)
+
+    keyboard = ReplyKeyboardMarkup(
+        keyboard = buttons,
+        resize_keyboard = True,
+        one_time_keyboard = True
+    )
+
+    @dp.message(F.text.regexp(r'^[^\w]*([A-Z]{3})'))
+    async def handle_curr_button(message: types.Message):
+        curr_code = re.search(r'[A-Z]{3}', message.text).group()
+        await message.answer(f"Ура ты выбрал валюту: {message.text}")
+
+
+
+    @dp.message(Command("subscribe"))
+    async def subscribe(message: types.Message):
+        await message.answer("Выбери валюту:", reply_markup=keyboard)
+
+
 
     await dp.start_polling(bot)
 
