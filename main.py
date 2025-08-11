@@ -68,11 +68,11 @@ async def get_curr_name(currency_num):
 
 
         query = """
-           select currency_name, currency_code from currency
+           select currency_name from currency
            where currency_num = $1
            """
         result = await connection.fetch(query,currency_num)
-        print(result)
+        return result
 
     except Exception as ex:
         print("mistake ", ex)
@@ -151,7 +151,7 @@ async def get_last_date():
             await connection.close()
             print("connection closed")
 
-async def check_subscription(user_id, currency_code):
+async def check_subscription(user_id, currency_num):
     try:
         connection = await asyncpg.connect(
             host = host,
@@ -163,8 +163,29 @@ async def check_subscription(user_id, currency_code):
         query = """
         select * from user_choice where user_id = $1 and currency_num = $2"""
 
-        result = await connection.fetch(query, user_id, currency_code)
+        result = await connection.fetch(query, user_id, currency_num)
 
+        return result
+    except Exception as ex:
+        print("mistake", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection closed")
+
+async def new_subscription(user_id,currency_num):
+    try:
+        connection = await asyncpg.connect(
+            host = host,
+            user = user,
+            password = password,
+            database = db_name
+        )
+        query = """
+        insert into user_choice (user_id, currency_num, created_at)
+        values ($1, $2, current_date)
+        """
+        result = await connection.fetch(query, user_id, currency_num)
         return result
     except Exception as ex:
         print("mistake", ex)
@@ -237,12 +258,25 @@ async def main():
 
     @dp.message()
     async def subscribe_curr(message:types.Message):
-        match = re.fullmatch(r'/subscribe([A-Z]{3})',message.text)
+        match = re.fullmatch(r'/subscribe([A-Za-z]{3})',message.text)
         if match:
-            curr_code = match.group(1)
-            res = await check_subscription(message.from_user.id,curr_code)
+            curr_code = match.group(1).upper()
+            curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+            res = await check_subscription(message.from_user.id,curr_num)
+            res1 = await check_subscription(message.from_user.id,'410')
             print(res)
-            await message.answer(f"{message.from_user.id}, {curr_code}")
+            #print(res1)
+            if res: #if subscription exist
+                curr_name = (await get_curr_name(curr_num))[0]['currency_name']
+                await message.answer(f"Вы уже подписаны на валюту {curr_code}, {curr_name}!\n\n"
+                                     f"Больше информации о валюте:\n"
+                                     f"/{curr_code}  ИЛИ  {curr_code.upper()}")
+            else:
+                curr_name = (await get_curr_name(curr_num))[0]['currency_name']
+                await new_subscription(message.from_user.id, curr_num)
+                await message.answer(f"Вы успешно подписались на валюту {curr_code}, {curr_name}!")
+
+            #await message.answer(f"{message.from_user.id}, {curr_code}")
 
 
 
