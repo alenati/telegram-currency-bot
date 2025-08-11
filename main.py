@@ -10,15 +10,11 @@ from messages import start_m, help_m
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram import F
 import re
+from db_connection import connect
 
 async def get_last_curr_info(currency_num):
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
 
         query = """
         select date, rate, unit, currency_num from currency_cost
@@ -39,12 +35,7 @@ async def get_last_curr_info(currency_num):
 
 async def get_curr_num(currency_code):
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
         query = """
         select currency_num from currency where currency_code = $1"""
         result = await connection.fetch(query,currency_code)
@@ -59,12 +50,7 @@ async def get_curr_num(currency_code):
 
 async def get_curr_name(currency_num):
     try:
-        connection = await asyncpg.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=db_name
-        )
+        connection = await connect()
 
 
         query = """
@@ -83,12 +69,7 @@ async def get_curr_name(currency_num):
 
 async def get_num_subscribers(currency_num):
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
         query = '''
             select coalesce((select count(user_id) from user_choice where currency_num = $1),0)
             as num_subscribers;
@@ -106,12 +87,7 @@ async def get_num_subscribers(currency_num):
 
 async def get_last_updates(moscow_date):
     try:
-        connection = await asyncpg.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=db_name
-        )
+        connection = await connect()
 
         query = """
         select curr.currency_name as currency_name, cost.unit as unit, cost.rate as rate, curr.currency_code as currency_code 
@@ -130,12 +106,7 @@ async def get_last_updates(moscow_date):
 
 async def get_last_date():
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
 
         query = """
         select date from currency_cost order by date desc limit 1;
@@ -153,12 +124,7 @@ async def get_last_date():
 
 async def check_subscription(user_id, currency_num):
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
 
         query = """
         select * from user_choice where user_id = $1 and currency_num = $2"""
@@ -175,12 +141,7 @@ async def check_subscription(user_id, currency_num):
 
 async def new_subscription(user_id,currency_num):
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
         query = """
         insert into user_choice (user_id, currency_num, created_at)
         values ($1, $2, current_date)
@@ -196,12 +157,7 @@ async def new_subscription(user_id,currency_num):
 
 async def get_subscription_list(user_id):
     try:
-        connection = await asyncpg.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = db_name
-        )
+        connection = await connect()
         date = (await get_last_date())[0]['date']
         query = """
         select cy.currency_name, cy.currency_code, cc.unit, cc.rate from user_choice uc
