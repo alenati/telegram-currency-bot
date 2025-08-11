@@ -151,6 +151,28 @@ async def get_last_date():
             await connection.close()
             print("connection closed")
 
+async def check_subscription(user_id, currency_code):
+    try:
+        connection = await asyncpg.connect(
+            host = host,
+            user = user,
+            password = password,
+            database = db_name
+        )
+
+        query = """
+        select * from user_choice where user_id = $1 and currency_num = $2"""
+
+        result = await connection.fetch(query, user_id, currency_code)
+
+        return result
+    except Exception as ex:
+        print("mistake", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection closed")
+
 async def main():
     #await get_last_curr_info('978')
     #await get_curr_name('978')
@@ -208,10 +230,22 @@ async def main():
                              f"Цифровой код валюты: {curr_num}\n\nКоличество подписчиков на валюту: {subs_num}\n\n")
 
 
-
-    @dp.message(Command("subscribe"))
+    @dp.message(Command("currency"))
     async def subscribe(message: types.Message):
         await message.answer("Выбери валюту:", reply_markup=keyboard)
+
+
+    @dp.message()
+    async def subscribe_curr(message:types.Message):
+        match = re.fullmatch(r'/subscribe([A-Z]{3})',message.text)
+        if match:
+            curr_code = match.group(1)
+            res = await check_subscription(message.from_user.id,curr_code)
+            print(res)
+            await message.answer(f"{message.from_user.id}, {curr_code}")
+
+
+
 
 
 
