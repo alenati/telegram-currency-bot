@@ -194,6 +194,30 @@ async def new_subscription(user_id,currency_num):
             await connection.close()
             print("connection closed")
 
+async def get_subscription_list(user_id):
+    try:
+        connection = await asyncpg.connect(
+            host = host,
+            user = user,
+            password = password,
+            database = db_name
+        )
+        date = (await get_last_date())[0]['date']
+        query = """
+        select cy.currency_name, cy.currency_code, cc.unit, cc.rate from user_choice uc
+        join currency_cost cc on uc.currency_num = cc.currency_num 
+        join currency cy on cy.currency_num = uc.currency_num
+        where date = $1 and user_id = $2;"""
+
+        result = await connection.fetch(query,date, user_id)
+        return result
+    except Exception as ex:
+        print("mistake ", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection closed")
+
 async def main():
     #await get_last_curr_info('978')
     #await get_curr_name('978')
@@ -254,6 +278,14 @@ async def main():
     @dp.message(Command("currency"))
     async def subscribe(message: types.Message):
         await message.answer("Выбери валюту:", reply_markup=keyboard)
+
+    @dp.message(Command("clist"))
+    async def clist(message: types.Message):
+        rows = await get_subscription_list(message.from_user.id)
+        ans = f"Ваши подписки:\n\n"
+        for row in rows:
+            ans += f"{row['currency_name']}: {row['unit']} {row['currency_code']} за {row['rate']} RUR\n\n"
+        await message.answer(f"{ans}")
 
 
     @dp.message()
