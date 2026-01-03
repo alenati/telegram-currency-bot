@@ -4,7 +4,7 @@ import pytz
 from datetime import datetime, timedelta
 from aiogram import Bot,Dispatcher,types
 from aiogram.filters import Command
-from config import host, user, password, db_name, api_key
+from config import api_key
 from buttonlist import buttons
 from messages import start_m, help_m
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -155,6 +155,23 @@ async def new_subscription(user_id,currency_num):
             await connection.close()
             print("connection closed")
 
+
+async def unsubcribe(user_id, currency_num):
+    try:
+        connection = await connect()
+        query = """
+        delete from user_choice where user_id = $1 and currency_num = $2
+        """
+        result = await connection.fetch(query, user_id, currency_num)
+        
+        return result
+    except Exception as ex:
+        print("maistake", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection closed")       
+
 async def get_subscription_list(user_id):
     try:
         connection = await connect()
@@ -266,6 +283,18 @@ async def main():
 
             #await message.answer(f"{message.from_user.id}, {curr_code}")
 
+        
+        match = re.fullmatch(r'/unsubscribe([A-Za-z]{3})',message.text)
+        if match:
+            curr_code = match.group(1).upper()
+            curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+            res = await check_subscription(message.from_user.id,curr_num)
+            if res:
+                await unsubcribe(message.from_user.id, curr_num)
+                await message.answer(f"Вы успешно отписались от валюты ({curr_code})!")
+            else:
+                await message.answer(f"Вы не были подписаны на эту валюту ({curr_code})!")
+    
 
 
 
