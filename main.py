@@ -14,6 +14,13 @@ from db_connection import connect
 import requests
 from config import news_api_key
 from aiogram.types import LabeledPrice
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
+
+class CurrState(StatesGroup):
+    view = State()
+    subs = State()
+    unsubs = State()
 
 async def get_last_curr_info(currency_num):
     try:
@@ -194,6 +201,39 @@ async def get_subscription_list(user_id):
             await connection.close()
             print("connection closed")
 
+#param can be "sub" - to get sub keyboard
+#"unsub" - to get unsub keyboard
+async def get_custom_keyboard(user_id, param):
+    subs = await get_subscription_list(user_id)
+    subscribed = []
+    for i in range(len(subs)):
+        subscribed.append(subs[i]["currency_code"])
+    unsubcribed_buttons = []
+    for row in buttons:
+        new_row = []
+        for button in row:
+            match_in_button = re.search(r'\b[A-Z]{3}\b', button.text)
+            if not match_in_button:
+                continue
+            curr_code = match_in_button.group()
+
+            if param == "sub":
+                if curr_code in subscribed:
+                    new_row.append(button)
+            elif param == "unsub":
+                if curr_code not in subscribed:
+                    new_row.append(button)
+        if new_row:
+            unsubcribed_buttons.append(new_row)
+    
+    new_keyboard = ReplyKeyboardMarkup(
+        keyboard = unsubcribed_buttons,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+
+    return new_keyboard
+
 async def main():
     #await get_last_curr_info('978')
     #await get_curr_name('978')
@@ -237,23 +277,19 @@ async def main():
         one_time_keyboard = True
     )
 
-    @dp.message(F.text.regexp(r'^[^\w]*([A-Z]{3})'))
-    async def handle_curr_button(message: types.Message):
-        curr_code = re.search(r'[A-Z]{3}', message.text).group()
-        curr_num = (await get_curr_num(curr_code))[0]['currency_num']
-        subs_num = (await  get_num_subscribers(curr_num))[0]['num_subscribers']
-        last_info = await get_last_curr_info(curr_num)
-        print(message.from_user.id)
+    # @dp.message(F.text.regexp(r'^[^\w]*([A-Z]{3})'))
+    # async def handle_curr_button(message: types.Message):
+    #     curr_code = re.search(r'[A-Z]{3}', message.text).group()
+    #     curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+    #     subs_num = (await  get_num_subscribers(curr_num))[0]['num_subscribers']
+    #     last_info = await get_last_curr_info(curr_num)
+    #     print(message.from_user.id)
 
-        await message.answer(f"{message.text}\n\n"
-                             f"Актуальный курс ЦБ РФ:\n\n{last_info[0]['unit']} {curr_code} за {last_info[0]['rate']} RUR\n\n"
-                             f"/subscribe{curr_code} чтобы подписаться на валюту и ежедневно получать рассылку!\n\n"
-                             f"Цифровой код валюты: {curr_num}\n\nКоличество подписчиков на валюту: {subs_num}\n\n")
-
-
-    @dp.message(Command("currency"))
-    async def subscribe(message: types.Message):
-        await message.answer("Выбери валюту:", reply_markup=keyboard)
+    #     await message.answer(f"{message.text}\n\n"
+    #                          f"Актуальный курс ЦБ РФ:\n\n{last_info[0]['unit']} {curr_code} за {last_info[0]['rate']} RUR\n\n"
+    #                          f"/subscribe{curr_code} чтобы подписаться на валюту и ежедневно получать рассылку!\n\n"
+    #                          f"Цифровой код валюты: {curr_num}\n\nКоличество подписчиков на валюту: {subs_num}\n\n")
+        
 
     @dp.message(Command("clist"))
     async def clist(message: types.Message):
@@ -315,10 +351,70 @@ async def main():
                     prices= [LabeledPrice(label="ДОНАТ", amount=amount)
                 ],
                 start_parameter=f"donate{amount}")
+        
+    @dp.message(Command("subscribe"))
+    async def subscribe(message:types.Message, state: FSMContext):
+        new_keyboard = await get_custom_keyboard(message.from_user.id, "unsub")
+        await message.answer("Выбери валюту из списка или напиши её код (в формате XXX или /XXX) для подписки:", reply_markup=new_keyboard)
+        await state.set_state(CurrState.subs)
+    
+    @dp.message(Command("unsubscribe"))
+    async def unsubscribe(message:types.Message, state: FSMContext):
+        new_keyboard = await get_custom_keyboard(message.from_user.id, "sub")
+        await message.answer("Выбери валюту из списка или напиши её код (в формате XXX или /XXX) для отписки:", reply_markup=new_keyboard)
+        await state.set_state(CurrState.unsubs)
+
+    @dp.message(Command("currency"))
+    async def subscribe(message: types.Message, state: FSMContext):
+        await state.set_state(CurrState.view)
+        await message.answer("Выбери валюту из списка или напиши её код (в формате XXX или /XXX) для просмотра подробной информации по валюте:", reply_markup=keyboard)
 
     @dp.message()
-    async def subscribe_curr(message:types.Message):
+    async def handle_messages(message:types.Message, state: FSMContext):
+        current_state = await state.get_state()
+
+        if current_state == CurrState.view.state:
+            curr_code = re.search(r'[A-Z]{3}', message.text).group()
+            curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+            subs_num = (await  get_num_subscribers(curr_num))[0]['num_subscribers']
+            last_info = await get_last_curr_info(curr_num)
+            print(message.from_user.id)
+
+            await message.answer(f"{message.text}\n\n"
+                                f"Актуальный курс ЦБ РФ:\n\n{last_info[0]['unit']} {curr_code} за {last_info[0]['rate']} RUR\n\n"
+                                f"/subscribe{curr_code} чтобы подписаться на валюту и ежедневно получать рассылку!\n\n"
+                                f"Цифровой код валюты: {curr_num}\n\nКоличество подписчиков на валюту: {subs_num}\n\n")
+            
+        elif current_state == CurrState.subs.state:
+            curr_code = re.search(r'[A-Z]{3}', message.text).group().upper()
+            curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+            res = await check_subscription(message.from_user.id,curr_num)
+            res1 = await check_subscription(message.from_user.id,'410')
+            print(res)
+            #print(res1)
+            if res: #if subscription exist
+                curr_name = (await get_curr_name(curr_num))[0]['currency_name']
+                await message.answer(f"Вы уже подписаны на валюту {curr_code}, {curr_name}!\n\n"
+                                     f"Больше информации о валюте:\n"
+                                     f"/{curr_code}  ИЛИ  {curr_code.upper()}")
+            else:
+                curr_name = (await get_curr_name(curr_num))[0]['currency_name']
+                await new_subscription(message.from_user.id, curr_num)
+                await message.answer(f"Вы успешно подписались на валюту {curr_code}, {curr_name}!")
+        elif current_state == CurrState.unsubs.state:
+            curr_code = re.search(r'[A-Z]{3}', message.text).group().upper()
+            curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+            res = await check_subscription(message.from_user.id,curr_num)
+            if res:
+                await unsubcribe(message.from_user.id, curr_num)
+                await message.answer(f"Вы успешно отписались от валюты ({curr_code})!")
+            else:
+                await message.answer(f"Вы не были подписаны на эту валюту ({curr_code})!")
+
+        await state.clear()
+
         match = re.fullmatch(r'/subscribe([A-Za-z]{3})',message.text)
+
         if match:
             curr_code = match.group(1).upper()
             curr_num = (await get_curr_num(curr_code))[0]['currency_num']
