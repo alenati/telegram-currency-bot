@@ -11,6 +11,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram import F
 import re
 from db_connection import connect
+import requests
+from config import news_api_key
 
 async def get_last_curr_info(currency_num):
     try:
@@ -258,6 +260,21 @@ async def main():
         ans = f"Ваши подписки:\n\n"
         for row in rows:
             ans += f"{row['currency_name']}: {row['unit']} {row['currency_code']} за {row['rate']} RUR\n\n"
+        await message.answer(f"{ans}")
+
+
+    @dp.message(Command("news"))
+    async def news(message: types.Message):
+        url = "https://newsapi.org/v2/top-headlines"
+        parameters = {"category": "business", "apiKey": news_api_key}
+
+        resp = requests.get(url, parameters)
+        data = resp.json()
+        ans = "Самые актуальные бизнес новости на сегодня:\n\n"
+        for i in range(3):
+            ans+= f'{data["articles"][i]["title"]}\n{data["articles"][i]["url"]}'
+            if i != 2:
+                ans += '\n\n'
         await message.answer(f"{ans}")
 
 
