@@ -488,6 +488,7 @@ async def main():
             else:
                 await message.answer(f"Вы не были подписаны на эту валюту ({curr_code})!")
         elif current_state == CurrState.graph.state:
+            await message.answer("Подождите генерацию графика...")
             curr_code = re.search(r'[A-Z]{3}', message.text).group().upper()
             curr_num = (await get_curr_num(curr_code))[0]['currency_num']
             res = await get_historical_info(curr_num)
@@ -502,7 +503,7 @@ async def main():
 
             await message.answer_photo(
                 photo=image,
-                caption=f"Курс {curr_code} за последние 7 дней"
+                caption=f"График курса {curr_code}"
             )
 
         await state.clear()
