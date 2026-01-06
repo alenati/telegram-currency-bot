@@ -16,11 +16,17 @@ from config import news_api_key
 from aiogram.types import LabeledPrice
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+import matplotlib
+import matplotlib.pyplot as plt
+from io import BytesIO
+from aiogram.types import BufferedInputFile
+
 
 class CurrState(StatesGroup):
     view = State()
     subs = State()
     unsubs = State()
+    graph = State()
 
 async def get_last_curr_info(currency_num):
     try:
@@ -77,6 +83,25 @@ async def get_curr_name(currency_num):
             await connection.close()
             print("connection closed")
 
+async def get_curr_code(curr_num):
+    try:
+        connection = await connect()
+
+
+        query = """
+           select currency_code from currency
+           where currency_num = $1
+           """
+        result = await connection.fetch(query,curr_num)
+        return result
+
+    except Exception as ex:
+        print("mistake ", ex)
+    finally:
+        if connection:
+            await connection.close()
+            print("connection closed")
+
 async def get_num_subscribers(currency_num):
     try:
         connection = await connect()
@@ -94,6 +119,21 @@ async def get_num_subscribers(currency_num):
         if connection:
             await connection.close()
             print("connection close")
+
+async def get_historical_info(currency_num):
+    try:
+        connection = await connect()
+        query = """
+        select date, rate, unit from currency_cost where currency_num = $1
+        """
+        result = await connection.fetch(query, currency_num)
+
+        return result
+
+    except Exception as e:
+        print("mistake", e)
+    finally:
+        pass
 
 async def get_last_updates(moscow_date):
     try:
@@ -165,6 +205,15 @@ async def new_subscription(user_id,currency_num):
             await connection.close()
             print("connection closed")
 
+#param can be "str" - if you want it in string format 
+#and "date" - if you want to work with date
+async def get_time(time_record, param):
+    date_str = time_record.strftime("%Y-%m-%d")
+    date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    if param == "str":
+        return date_str
+    elif param == "date":
+        return date
 
 async def unsubcribe(user_id, currency_num):
     try:
@@ -233,6 +282,29 @@ async def get_custom_keyboard(user_id, param):
     )
 
     return new_keyboard
+
+async def get_graph(dates, rates, unit, curr_code):
+        
+        matplotlib.use("Agg")
+        plt.figure(figsize=(8, 4))
+        plt.plot(dates, rates, marker="o")
+        plt.grid(True)
+        plt.title(f'Курс {curr_code} к RUR. Цена за {unit} {curr_code}')
+        plt.xlabel("Дата")
+        plt.xticks(rotation=90)
+        plt.ylabel("Курс (RUR)")
+
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png", bbox_inches="tight")
+        plt.close()
+        buf.seek(0)
+
+        image = BufferedInputFile(
+        buf.getvalue(),
+        filename="graph.png"
+        )
+        return image
 
 async def main():
     #await get_last_curr_info('978')
@@ -369,6 +441,11 @@ async def main():
         await state.set_state(CurrState.view)
         await message.answer("Выбери валюту из списка или напиши её код (в формате XXX или /XXX) для просмотра подробной информации по валюте:", reply_markup=keyboard)
 
+    @dp.message(Command("graph"))
+    async def generate_graph(message: types.Message, state: FSMContext):
+        await state.set_state(CurrState.graph)
+        await message.answer("Выбери валюту из списка для генерации графика:", reply_markup=keyboard)
+        
     @dp.message()
     async def handle_messages(message:types.Message, state: FSMContext):
         current_state = await state.get_state()
@@ -410,6 +487,23 @@ async def main():
                 await message.answer(f"Вы успешно отписались от валюты ({curr_code})!")
             else:
                 await message.answer(f"Вы не были подписаны на эту валюту ({curr_code})!")
+        elif current_state == CurrState.graph.state:
+            curr_code = re.search(r'[A-Z]{3}', message.text).group().upper()
+            curr_num = (await get_curr_num(curr_code))[0]['currency_num']
+            res = await get_historical_info(curr_num)
+            dates = []
+            rates = []
+
+            for row in res:
+                dates.append(await get_time(row["date"], "str"))
+                rates.append(float(row["rate"]))
+
+            image = await get_graph(dates,rates,res[0]["unit"],curr_code)
+
+            await message.answer_photo(
+                photo=image,
+                caption=f"Курс {curr_code} за последние 7 дней"
+            )
 
         await state.clear()
 
