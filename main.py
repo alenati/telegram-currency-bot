@@ -26,12 +26,7 @@ from functions import get_num_subscribers, get_historical_info, get_last_updates
 from functions import check_subscription, new_subscription, get_time, unsubcribe
 from functions import get_subscription_list, get_custom_keyboard, get_graph
 
-
-class CurrState(StatesGroup):
-    view = State()
-    subs = State()
-    unsubs = State()
-    graph = State()
+from states import CurrState
 
 async def main():
     #await get_last_curr_info('978')
