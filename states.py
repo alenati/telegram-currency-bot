@@ -5,3 +5,11 @@ class CurrState(StatesGroup):
     subs = State()
     unsubs = State()
     graph = State()
+    today_news = State()
+    date_news = State()
+    month_news = State()
+    random_news = State()
+
+class LangState(StatesGroup):
+    en = State()
+    ru = State()

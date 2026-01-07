@@ -26,7 +26,8 @@ from functions import get_num_subscribers, get_historical_info, get_last_updates
 from functions import check_subscription, new_subscription, get_time, unsubcribe
 from functions import get_subscription_list, get_custom_keyboard, get_graph
 
-from states import CurrState
+from states import CurrState, LangState
+from news_db import get_today_news
 
 async def main():
     #await get_last_curr_info('978')
@@ -93,21 +94,6 @@ async def main():
             ans += f"{row['currency_name']}: {row['unit']} {row['currency_code']} за {row['rate']} RUR\n\n"
         await message.answer(f"{ans}")
 
-
-    @dp.message(Command("news"))
-    async def news(message: types.Message):
-        url = "https://newsapi.org/v2/top-headlines"
-        parameters = {"category": "business", "apiKey": news_api_key}
-
-        resp = requests.get(url, parameters)
-        data = resp.json()
-        ans = "Самые актуальные бизнес новости на сегодня:\n\n"
-        for i in range(3):
-            ans+= f'{data["articles"][i]["title"]}\n{data["articles"][i]["url"]}'
-            if i != 2:
-                ans += '\n\n'
-        await message.answer(f"{ans}")
-
     @dp.message(Command("donate"))
     async def donate (message: types.Message):
 
@@ -145,6 +131,52 @@ async def main():
                     prices= [LabeledPrice(label="ДОНАТ", amount=amount)
                 ],
                 start_parameter=f"donate{amount}")
+    
+    @dp.message(Command("news"))
+    async def news(message: types.Message):
+
+        keyboard_news = ReplyKeyboardMarkup(
+        keyboard = [
+            [KeyboardButton(text="Сегодня")],
+            [KeyboardButton(text="По дате")],
+            [KeyboardButton(text="Все за месяц")],
+            [KeyboardButton(text="Рандомная новость")]],
+        resize_keyboard = True,
+        one_time_keyboard = True
+        )
+        await message.answer("Выбери, за какой период отобразить новости:",reply_markup=keyboard_news)
+
+
+    @dp.message(F.text.in_(["Сегодня","По дате", "Все за месяц", "Рандомная новость"]))   
+    async def period_choice(message:types.Message, state: FSMContext):
+        if message.from_user == "Сегодня":
+            await state.set_state(CurrState.today_news)
+        elif message.from_user == "По дате":
+            await state.set_state(CurrState.date_news)
+        elif message.from_user == "Все за месяц":
+            await state.set_state(CurrState.month_news)
+        elif message.from_user == "Рандомная новость":
+            await state.set_state(CurrState.random_news)
+        
+        keyboard_lang = ReplyKeyboardMarkup(
+        keyboard = [
+            [KeyboardButton(text="Русский")],
+            [KeyboardButton(text="Английский")]],
+        resize_keyboard = True,
+        one_time_keyboard = True
+        )
+        await message.answer("Выбери язык, на котором ты хочешь увидеть новость\n\nВнимание: русский язык создан автоматически, эксперементальный режим.",reply_markup=keyboard_lang)
+
+    @dp.message(F.text.in_(["Русский","Английский"]))   
+    async def lang_choice(message:types.Message, state: FSMContext):
+        if message.from_user == "Русский":
+            await state.set_state(LangState.ru)
+        elif message.from_user == "Английский":
+            await state.set_state(LangState.en)
+
+    @dp.message(F.text.in_(["Полный обзор статей в .txt","Название - Ссылка"]))   
+    async def formatting_choice(message:types.Message):
+        pass
         
     @dp.message(Command("subscribe"))
     async def subscribe(message:types.Message, state: FSMContext):

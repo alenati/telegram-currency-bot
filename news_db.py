@@ -75,7 +75,6 @@ async def get_today_news(day: datetime, lang):
     elif lang == "en":
             for i in range(len(news)):
                 txt += f'Название статьи:\n{news[i]["title"]}\nСсылка:\n{news[i]["url"]}\n\n'
-    print(txt)
     return txt
     
 
@@ -89,8 +88,8 @@ async def random_news():
     pass
 
 
-async def main():
-    await get_today_news(datetime(2026,1,7), "ru")
+# async def main():
+#     await get_today_news(datetime(2026,1,7), "ru")
 
-asyncio.run(main())
+# asyncio.run(main())
 
