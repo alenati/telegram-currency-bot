@@ -5,10 +5,13 @@ import asyncio
 from datetime import timedelta, datetime
 import requests
 import pytz
+from googletrans import Translator
 
 client = MongoClient(client_uri)
 db = client[db_name]
 collection = db[collection_name]
+
+translator = Translator()
 
 
 async def get_last_news(date):
@@ -54,16 +57,40 @@ async def get_and_update():
             )
             
 
-
         except Exception as e:
             print(e)
             break
         
-        
+
+# lang = ru, en
+# fromat = full in .txt, titles-only
+async def get_today_news(day: datetime, lang):
+    txt = ""
+    news = list(collection.find({"date": day}))
+    if lang == "ru":
+        for i in range(len(news)):
+            
+            tr = await translator.translate(news[i]["title"], dest="ru")
+            txt += f'Название статьи:\n{tr.text}\nСсылка:\n{news[i]["url"]}\n\n'
+    elif lang == "en":
+            for i in range(len(news)):
+                txt += f'Название статьи:\n{news[i]["title"]}\nСсылка:\n{news[i]["url"]}\n\n'
+    print(txt)
+    return txt
+    
+
+# format = json, txt
+# lang = ru, en
+async def last_month_news():
+    pass
+
+# lang = ru, en
+async def random_news():
+    pass
 
 
 async def main():
-    await get_and_update()
+    await get_today_news(datetime(2026,1,7), "ru")
 
 asyncio.run(main())
 
