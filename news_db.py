@@ -14,10 +14,16 @@ collection = db[collection_name]
 translator = Translator()
 
 
+async def delete_non_relevant():
+    trash = datetime.now()-timedelta(days=30)
+    collection.delete_many({"date": {"$lt": trash}})
+
+
 async def get_last_news(date):
     print(list(collection.find({"date": date})))
 
 async def get_and_update():
+    await delete_non_relevant()
     parameters = {"category": "business", "apiKey": news_api_key}
 
     response = requests.get(news_url, parameters)
