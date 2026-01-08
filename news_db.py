@@ -63,7 +63,7 @@ async def get_and_update():
         
 
 # lang = ru, en
-# fromat = full in .txt, titles-only
+# format = full in .txt, titles-only
 async def get_today_news(day: datetime, lang):
     txt = ""
     news = list(collection.find({"date": day}))
@@ -89,7 +89,8 @@ async def random_news():
 
 
 # async def main():
-#     await get_today_news(datetime(2026,1,7), "ru")
+#     await get_today_news(datetime(2026,1,6), "ru")
+#     await get_and_update()
 
 # asyncio.run(main())
 

@@ -1,6 +1,6 @@
 import asyncpg
-from config import host, user, password, db_name, api_key
 import asyncio
+from config import host, user, password, db_name
 
 #to run: await connect()
 

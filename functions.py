@@ -14,17 +14,32 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 import pytz
 
+async def generate_txt_file(date, text):
+    buffer = BytesIO()
+    buffer.write(text.encode("utf-8"))
+    buffer.seek(0)
+
+    file = BufferedInputFile(buffer.read(), filename = f"news-{date}.txt")
+
+    return file
+
 async def get_language_and_period(state: FSMContext):
-    states = await state.get_state()
 
     settings = []
 
-    if states == LangState.ru.state:
+    current_state = await state.get_state()
+    data = await state.get_data()
+
+    lang = data.get("lang")
+    period = data.get("period")
+    print(lang, period)
+
+    if lang == "ru":
         settings.append("ru")
-    elif states == LangState.en.state:
+    elif lang == "en":
         settings.append("en")
 
-    if states == CurrState.today_news.state:
+    if period == "today":
 
         moscow_tz = pytz.timezone('Europe/Moscow')
         now = datetime.now(moscow_tz).date()
@@ -35,8 +50,9 @@ async def get_language_and_period(state: FSMContext):
         )
         settings.append(date)
 
-
-    await state.clear()
+    print(settings)
+    
+    return settings
 
 
 

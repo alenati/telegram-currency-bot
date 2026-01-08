@@ -149,15 +149,20 @@ async def main():
 
     @dp.message(F.text.in_(["Сегодня","По дате", "Все за месяц", "Рандомная новость"]))   
     async def period_choice(message:types.Message, state: FSMContext):
-        if message.from_user == "Сегодня":
+        if message.text == "Сегодня":
             await state.set_state(CurrState.today_news)
-        elif message.from_user == "По дате":
+            await state.update_data(period = "today")
+        elif message.text == "По дате":
             await state.set_state(CurrState.date_news)
-        elif message.from_user == "Все за месяц":
+            await state.update_data(period = "date")
+        elif message.text == "Все за месяц":
             await state.set_state(CurrState.month_news)
-        elif message.from_user == "Рандомная новость":
+            await state.update_data(period = "month")
+        elif message.text == "Рандомная новость":
             await state.set_state(CurrState.random_news)
+            await state.update_data(period = "random")
         
+
         keyboard_lang = ReplyKeyboardMarkup(
         keyboard = [
             [KeyboardButton(text="Русский")],
@@ -169,12 +174,13 @@ async def main():
 
     @dp.message(F.text.in_(["Русский","Английский"]))   
     async def lang_choice(message:types.Message, state: FSMContext):
-        current_state = await state.get_state()
-        if message.from_user == "Русский":
-            await state.set_state(LangState.ru)
-        elif message.from_user == "Английский":
-            await state.set_state(LangState.en)
+        
+        if message.text == "Русский":
+            await state.update_data(lang = "ru")
+        elif message.text == "Английский":
+            await state.update_data(lang = "en")
 
+        current_state = await state.get_state()
 
         if current_state == CurrState.today_news.state or current_state == CurrState.date_news.state:
             keyboard_format = ReplyKeyboardMarkup(
@@ -197,10 +203,20 @@ async def main():
     async def formatting_choice(message:types.Message, state: FSMContext):
         current_state = await state.get_state()
         
-        if message.from_user == "Полный обзор статей в .txt":
-            pass
-        elif message.from_user == "Название - Ссылка":
-            settings = await get_language_and_period()
+        if message.text == "Полный обзор статей в .txt":
+            text = "hello br0"
+            buffer = BytesIO()
+            buffer.write(text.encode("utf-8"))
+            buffer.seek(0)
+
+            file = BufferedInputFile(
+                buffer.read(),
+                filename="news.txt"
+            )
+
+            await message.answer_document(file)
+        elif message.text == "Название - Ссылка":
+            settings = await get_language_and_period(state)
             if settings[1] is not None:
                 ans = await get_today_news(settings[1], settings[0])
                 await message.answer(ans)
@@ -289,7 +305,9 @@ async def main():
                 caption=f"График курса {curr_code}"
             )
 
-        await state.clear()
+        if current_state in (CurrState.view, CurrState.subs, CurrState.unsubs, CurrState.graph):
+            await state.clear()
+
 
         match = re.fullmatch(r'/subscribe([A-Za-z]{3})',message.text)
 
