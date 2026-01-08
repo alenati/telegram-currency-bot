@@ -7,6 +7,38 @@ from datetime import datetime, timedelta
 from buttonlist import buttons
 import re
 from aiogram.types import BufferedInputFile
+import asyncpg
+from db_connection import connect
+from states import CurrState, LangState
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
+import pytz
+
+async def get_language_and_period(state: FSMContext):
+    states = await state.get_state()
+
+    settings = []
+
+    if states == LangState.ru.state:
+        settings.append("ru")
+    elif states == LangState.en.state:
+        settings.append("en")
+
+    if states == CurrState.today_news.state:
+
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        now = datetime.now(moscow_tz).date()
+        date = datetime(
+            now.year,
+            now.month,
+            now.day
+        )
+        settings.append(date)
+
+
+    await state.clear()
+
+
 
 async def get_last_curr_info(currency_num):
     try:
@@ -25,9 +57,10 @@ async def get_last_curr_info(currency_num):
     except Exception as ex:
         print("mistake ", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_curr_num(currency_code):
     try:
@@ -40,9 +73,10 @@ async def get_curr_num(currency_code):
     except Exception as ex:
         print("mistake: ", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+       # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_curr_name(currency_num):
     try:
@@ -59,9 +93,10 @@ async def get_curr_name(currency_num):
     except Exception as ex:
         print("mistake ", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_curr_code(curr_num):
     try:
@@ -78,9 +113,10 @@ async def get_curr_code(curr_num):
     except Exception as ex:
         print("mistake ", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_num_subscribers(currency_num):
     try:
@@ -96,9 +132,10 @@ async def get_num_subscribers(currency_num):
     except Exception as ex:
         print("mistake", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection close")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_historical_info(currency_num):
     try:
@@ -131,8 +168,10 @@ async def get_last_updates(moscow_date):
     except Exception as ex:
         print("mistake: ", ex)
     finally:
-        await connection.close()
-        print("connection close")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_last_date():
     try:
@@ -148,9 +187,10 @@ async def get_last_date():
     except Exception as ex:
         print("mistake: ", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def check_subscription(user_id, currency_num):
     try:
@@ -165,9 +205,10 @@ async def check_subscription(user_id, currency_num):
     except Exception as ex:
         print("mistake", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def new_subscription(user_id,currency_num):
     try:
@@ -181,9 +222,10 @@ async def new_subscription(user_id,currency_num):
     except Exception as ex:
         print("mistake", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 #param can be "str" - if you want it in string format 
 #and "date" - if you want to work with date
@@ -207,9 +249,10 @@ async def unsubcribe(user_id, currency_num):
     except Exception as ex:
         print("maistake", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")       
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 async def get_subscription_list(user_id):
     try:
@@ -226,9 +269,10 @@ async def get_subscription_list(user_id):
     except Exception as ex:
         print("mistake ", ex)
     finally:
-        if connection:
-            await connection.close()
-            print("connection closed")
+        # if connection:
+        #     await connection.close()
+        #     print("connection closed")
+        pass
 
 #param can be "sub" - to get sub keyboard
 #"unsub" - to get unsub keyboard

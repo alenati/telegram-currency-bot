@@ -13,3 +13,7 @@ class CurrState(StatesGroup):
 class LangState(StatesGroup):
     en = State()
     ru = State()
+
+class FormatState(StatesGroup):
+    txt = State()
+    non_txt = State()

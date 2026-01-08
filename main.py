@@ -24,9 +24,9 @@ from aiogram.types import BufferedInputFile
 from functions import get_last_curr_info, get_curr_num, get_curr_name, get_curr_code
 from functions import get_num_subscribers, get_historical_info, get_last_updates, get_last_date
 from functions import check_subscription, new_subscription, get_time, unsubcribe
-from functions import get_subscription_list, get_custom_keyboard, get_graph
+from functions import get_subscription_list, get_custom_keyboard, get_graph, get_language_and_period
 
-from states import CurrState, LangState
+from states import CurrState, LangState, FormatState
 from news_db import get_today_news
 
 async def main():
@@ -169,14 +169,43 @@ async def main():
 
     @dp.message(F.text.in_(["Русский","Английский"]))   
     async def lang_choice(message:types.Message, state: FSMContext):
+        current_state = await state.get_state()
         if message.from_user == "Русский":
             await state.set_state(LangState.ru)
         elif message.from_user == "Английский":
             await state.set_state(LangState.en)
 
+
+        if current_state == CurrState.today_news.state or current_state == CurrState.date_news.state:
+            keyboard_format = ReplyKeyboardMarkup(
+            keyboard = [
+                [KeyboardButton(text="Полный обзор статей в .txt")],
+                [KeyboardButton(text="Название - Ссылка")]],
+            resize_keyboard = True,
+            one_time_keyboard = True
+            )
+            await message.answer("Выбери, в каком формате вывести информацию:", reply_markup = keyboard_format)
+        
+        elif current_state == CurrState.month_news.state:
+            #TODO
+            await message.answer("Функция пока что не готова:(")
+        elif current_state == CurrState.random_news.state:
+            #TODO
+            await message.answer("Функция пока что не готова:(")
+
     @dp.message(F.text.in_(["Полный обзор статей в .txt","Название - Ссылка"]))   
-    async def formatting_choice(message:types.Message):
-        pass
+    async def formatting_choice(message:types.Message, state: FSMContext):
+        current_state = await state.get_state()
+        
+        if message.from_user == "Полный обзор статей в .txt":
+            pass
+        elif message.from_user == "Название - Ссылка":
+            settings = await get_language_and_period()
+            if settings[1] is not None:
+                ans = await get_today_news(settings[1], settings[0])
+                await message.answer(ans)
+
+
         
     @dp.message(Command("subscribe"))
     async def subscribe(message:types.Message, state: FSMContext):
