@@ -1,14 +1,15 @@
 import asyncpg
-import asyncio
-from config import host, user, password, db_name
+from dotenv import load_dotenv
+import os 
 
 #to run: await connect()
 
 async def connect():
+    load_dotenv()
     connection = await asyncpg.connect(
-                host = host,
-                user = user,
-                password = password,
-                database = db_name
+                host = os.getenv("PG_HOST"),
+                user = os.getenv("PG_USER"),
+                password = os.getenv("PG_PASSWORD"),
+                database = os.getenv("PG_DB_NAME")
             )
     return connection
