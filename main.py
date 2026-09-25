@@ -204,21 +204,23 @@ async def main():
         current_state = await state.get_state()
         
         if message.text == "Полный обзор статей в .txt":
-            text = "hello br0"
-            buffer = BytesIO()
-            buffer.write(text.encode("utf-8"))
-            buffer.seek(0)
+            ans = await get_today_news(settings[1], settings[0], "txt")
+            await message.answer(ans)
+            # text = "hello br0"
+            # buffer = BytesIO()
+            # buffer.write(text.encode("utf-8"))
+            # buffer.seek(0)
 
-            file = BufferedInputFile(
-                buffer.read(),
-                filename="news.txt"
-            )
+            # file = BufferedInputFile(
+            #     buffer.read(),
+            #     filename="news.txt"
+            # )
 
-            await message.answer_document(file)
+            # await message.answer_document(file)
         elif message.text == "Название - Ссылка":
             settings = await get_language_and_period(state)
             if settings[1] is not None:
-                ans = await get_today_news(settings[1], settings[0])
+                ans = await get_today_news(settings[1], settings[0], "inline")
                 await message.answer(ans)
 
 

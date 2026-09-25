@@ -1,6 +1,7 @@
 import psycopg2
 from config import host, user, password, db_name
 from parser import lines
+from datetime import datetime
 
 try:
     connection = psycopg2.connect(
@@ -17,7 +18,13 @@ try:
         """
 
         for line in lines:
-            cursor.execute(insert_q,line)
+            date_str = line[3] 
+            parsed_date = datetime.strptime(date_str, "%d.%m.%Y").date()
+
+            new_line = (line[0], line[1], line[2], parsed_date)
+
+   
+            cursor.execute(insert_q,new_line)
 
         connection.commit()
 

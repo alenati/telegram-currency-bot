@@ -5,7 +5,9 @@ import asyncio
 from datetime import timedelta, datetime
 import requests
 import pytz
+from io import BytesIO
 from googletrans import Translator
+from aiogram.types import BufferedInputFile
 
 client = MongoClient(client_uri)
 db = client[db_name]
@@ -69,18 +71,35 @@ async def get_and_update():
         
 
 # lang = ru, en
-# format = full in .txt, titles-only
-async def get_today_news(day: datetime, lang):
+# format = inline, txt
+async def get_today_news(day: datetime, lang, format):
     txt = ""
     news = list(collection.find({"date": day}))
     if lang == "ru":
-        for i in range(len(news)):
-            
-            tr = await translator.translate(news[i]["title"], dest="ru")
-            txt += f'Название статьи:\n{tr.text}\nСсылка:\n{news[i]["url"]}\n\n'
+        if format == "inline":
+            for i in range(len(news)):
+                
+                tr = await translator.translate(news[i]["title"], dest="ru")
+                txt += f'Название статьи:\n{tr.text}\nСсылка:\n{news[i]["url"]}\n\n'
+        if format == "txt":
+            text = "hello br0"
+            buffer = BytesIO()
+            buffer.write(text.encode("utf-8"))
+            buffer.seek(0)
+
+            file = BufferedInputFile(
+                buffer.read(),
+                filename="news.txt"
+            )
+
+            await message.answer_document(file)
+
     elif lang == "en":
+        if format == "inline":
             for i in range(len(news)):
                 txt += f'Название статьи:\n{news[i]["title"]}\nСсылка:\n{news[i]["url"]}\n\n'
+        if format == "txt":
+            pass 
     return txt
     
 
