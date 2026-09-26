@@ -4,10 +4,10 @@ from aiogram import types
 from aiogram.fsm.context import FSMContext
 import functions 
 import states
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup
 import buttonlist
 import pytz
-from datetime import datetime, timedelta
+from datetime import datetime
 
 router_commands = Router()
 
@@ -52,21 +52,6 @@ async def generate_graph(message: types.Message, state: FSMContext):
     )
     await message.answer("Выбери валюту из списка для генерации графика:", reply_markup=keyboard)
 
-@router_commands.message(Command("news"))
-async def news(message: types.Message):
-
-    keyboard_news = ReplyKeyboardMarkup(
-    keyboard = [
-        [KeyboardButton(text="Сегодня")],
-        [KeyboardButton(text="По дате")],
-        [KeyboardButton(text="Все за месяц")],
-        [KeyboardButton(text="Рандомная новость")]],
-    resize_keyboard = True,
-    one_time_keyboard = True
-    )
-    await message.answer("Выбери, за какой период отобразить новости:",reply_markup=keyboard_news)
-
-
 @router_commands.message(Command("today"))
 async def today (message: types.Message):
     moscow_tz = pytz.timezone('Europe/Moscow')
@@ -87,3 +72,16 @@ async def today (message: types.Message):
         answer += f"{record['currency_name']} ({record['currency_code']}):\n{record['unit']} за {record['rate']} Российских рублей (RUR)\n\n"
 
     await message.answer(answer)
+
+
+
+@router_commands.message(Command("clist"))
+async def clist(message: types.Message):
+    rows = await functions.get_subscription_list(message.from_user.id)
+    ans = f"Ваши подписки:\n\n"
+    for row in rows:
+        ans += f"{row['currency_name']}: {row['unit']} {row['currency_code']} за {row['rate']} RUR\n\n"
+    await message.answer(f"{ans}")
+
+
+        

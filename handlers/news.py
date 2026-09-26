@@ -88,3 +88,18 @@ async def formatting_choice(message:types.Message, state: FSMContext):
             ans = await functions.get_today_news(settings[1], settings[0], "inline")
             await message.answer(ans)
 
+
+
+@router_news.message(Command("news"))
+async def news(message: types.Message):
+
+    keyboard_news = ReplyKeyboardMarkup(
+    keyboard = [
+        [KeyboardButton(text="Сегодня")],
+        [KeyboardButton(text="По дате")],
+        [KeyboardButton(text="Все за месяц")],
+        [KeyboardButton(text="Рандомная новость")]],
+    resize_keyboard = True,
+    one_time_keyboard = True
+    )
+    await message.answer("Выбери, за какой период отобразить новости:",reply_markup=keyboard_news)
