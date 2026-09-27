@@ -8,16 +8,20 @@ from aiogram.types import ReplyKeyboardMarkup
 import buttonlist
 import pytz
 from datetime import datetime
+from translator import Translate
 
 router_commands = Router()
+translator = Translate()
 
 @router_commands.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("Hello! Choose language using /language (ru, sk, en)")
+    answer = translator.get("greetings")
+    await message.answer(answer)
 
 @router_commands.message(Command("help"))
 async def help(message:types.Message):
-    await message.answer("Help!")
+    answer = translator.get("help")
+    await message.answer(answer)
 
 @router_commands.message(Command("subscribe"))
 async def subscribe(message:types.Message, state: FSMContext):
