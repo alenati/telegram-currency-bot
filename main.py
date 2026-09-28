@@ -12,14 +12,11 @@ import logging
 from logging_config import setup_logger
 import asyncio
 from aiogram import Bot,Dispatcher
-import os
-from dotenv import load_dotenv
+from config import Config
 
 
 
 async def main():
-    load_dotenv()
-
     setup_logger()
     logging.info("[NODE 1] Starting")
 
@@ -39,7 +36,7 @@ async def main():
     logging.info("[NODE 2] Starting")
 
     # Second Node: loop 
-    tg_api_key = os.getenv("TG_API_KEY")
+    tg_api_key = Config.TG_API_KEY
     bot = Bot(token = tg_api_key)
     dp = Dispatcher()
     dp.include_router(router_commands)

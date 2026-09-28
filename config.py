@@ -17,9 +17,9 @@ class Config:
 
     TG_API_KEY= os.getenv("TG_API_KEY")
 
-    LANGUAGE=os.getenv("LANGUAGE")
+    LANGUAGE=os.getenv("LANGUAGE", "ru")
 
-    LOGS=os.getenv("LOGS")
+    LOGS=os.getenv("LOGS","true")
 
     RETRIES=os.getenv("RETRIES")
 

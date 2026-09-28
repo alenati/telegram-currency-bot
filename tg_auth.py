@@ -1,16 +1,11 @@
-from aiogram import Bot, Dispatcher
-import os 
-from dotenv import load_dotenv
-# import asyncio
+from aiogram import Bot
 import logging
-# from logging_config import setup_logger
+from config import Config
 
 
 
 async def tg_handshake():
-    load_dotenv()
-    bot = Bot(token=os.getenv("TG_API_KEY"))
-    # setup_logger()
+    bot = Bot(token=Config.TG_API_KEY)
     try:
         me = await bot.get_me()
         logging.info(f"[TELEGRAM AUTH] Successful")
