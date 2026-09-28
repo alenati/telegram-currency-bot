@@ -23,4 +23,17 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run pytest
+        env:
+          PG_HOST: localhost
+          PG_USER: test_user
+          PG_PASSWORD: test_password
+          PG_DB_NAME: test_db
+          TG_API_KEY: test_token
+          NEWS_API_KEY: test_api
+          NEWS_URL: test_uri
+          MG_COLLECTION_NAME: test_mg
+          MG_CLIENT_URI: test_client
+          LANGUAGE: "en"
+          LOGS: "true"
+          RETRIES: 5
         run: python -m pytest
