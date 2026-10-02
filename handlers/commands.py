@@ -39,11 +39,8 @@ async def unsubscribe(message:types.Message, state: FSMContext):
 @router_commands.message(Command("currency"))
 async def subscribe(message: types.Message, state: FSMContext):
     await state.set_state(states.CurrState.view)
-    keyboard = ReplyKeyboardMarkup(
-        keyboard = buttonlist.buttons,
-        resize_keyboard = True,
-        one_time_keyboard = True
-    )
+    currencies = buttonlist.get_currencies()
+    keyboard = buttonlist.create_currency_keyboard(currencies)
     await message.answer("Выбери валюту из списка или напиши её код (в формате XXX или /XXX) для просмотра подробной информации по валюте:", reply_markup=keyboard)
 
 @router_commands.message(Command("graph"))

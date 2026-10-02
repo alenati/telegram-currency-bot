@@ -1,4 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from config import Config
+import psycopg2
 
 buttons = [
             [KeyboardButton(text="🇺🇸 USD Доллар США")],
@@ -59,3 +61,54 @@ buttons = [
 
 
         ]
+
+
+def get_currencies():
+    connection = psycopg2.connect(
+                host = Config.PG_HOST,
+                user = Config.PG_USER,
+                password = Config.PG_PASSWORD,
+                database = Config.PG_DB_NAME
+            )
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                select currency_code, country_code from currency 
+            """)
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
+
+def country_code_to_flag(code: str) -> str:
+    return "".join(
+        chr(ord(char) + 127397)
+        for char in code.upper()
+    )
+
+def create_currency_keyboard(currencies):
+    buttons = []
+    row = []
+    for name, country_code in currencies:
+        flag = country_code_to_flag(country_code)
+
+        row.append(
+            KeyboardButton(
+                            text=f"{name} {flag}"
+                        )
+        )
+        if len(row) == 3:
+            buttons.append(row)
+            row = []
+
+        buttons.append([
+            
+        ])
+    if row:
+        buttons.append(row)
+
+    return ReplyKeyboardMarkup(
+        keyboard=buttons,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )

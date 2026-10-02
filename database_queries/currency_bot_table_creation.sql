@@ -4,6 +4,9 @@ create table if not exists currency (
 	currency_name varchar(50) not null
 );
 
+alter table currency
+add column country_code varchar(2) default 'NN' not null;
+
 create table if not exists user_choice (
 	user_id bigint not null,
 	currency_num varchar(3) not null references currency(currency_num),
